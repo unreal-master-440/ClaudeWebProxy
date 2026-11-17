@@ -1,0 +1,40 @@
+name: syntax
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Синтаксис всех файлов
+        run: |
+          for f in server.js lib/*.js scripts/*.js; do
+            node --check "$f" || exit 1
+          done
+
+      - name: Зависимостей нет
+        run: |
+          test -f package.json
+          node -e "const p=require('./package.json'); if (Object.keys(p.dependencies||{}).length) { console.error('dependencies must stay empty'); process.exit(1) }"
+
+      - name: Проверка модулей (без сети)
+        run: node -e "require('./lib/models'); require('./lib/protocols'); require('./lib/stream'); require('./lib/errors'); console.log('modules ok')"
+
+      - name: В репозитории нет секретов
+        run: |
+          for f in .env claude-auth.json browser-profile captures; do
+            if [ -e "$f" ]; then echo "::error::$f must not be committed"; exit 1; fi
+          done

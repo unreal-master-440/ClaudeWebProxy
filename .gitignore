@@ -1,0 +1,24 @@
+# зависимости
+node_modules/
+
+# секреты и сессии
+.env
+.env.local
+claude-auth.json
+auth.json
+browser-profile/
+captures/
+
+# логи и временное
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# редакторы
+.vscode/
+.idea/
+*.swp
+
+# служебное
+.abacusai-bot/

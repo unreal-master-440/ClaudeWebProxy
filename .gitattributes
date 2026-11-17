@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# Windows-скрипты должны оставаться CRLF, иначе cmd ломается
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+*.js   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.html text eol=lf
+
+# Бинарные файлы
+*.png binary
+*.jpg binary
+*.ico binary

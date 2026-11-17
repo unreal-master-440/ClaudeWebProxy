@@ -1,0 +1,37 @@
+{
+  "name": "claude-web-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Локальный прокси и веб-интерфейс к claude.ai: OpenAI/Anthropic/Responses API через авторизованную сессию браузера",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node server.js --test",
+    "auth": "node scripts/claude_auth.js",
+    "auth:capture": "node scripts/claude_auth.js --capture"
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/unreal-master-440/ClaudeWebProxy.git"
+  },
+  "homepage": "https://github.com/unreal-master-440/ClaudeWebProxy",
+  "bugs": {
+    "url": "https://github.com/unreal-master-440/ClaudeWebProxy/issues"
+  },
+  "keywords": [
+    "claude",
+    "claude-ai",
+    "proxy",
+    "openai-api",
+    "anthropic",
+    "responses-api",
+    "cdp",
+    "local"
+  ],
+  "license": "MIT"
+}
