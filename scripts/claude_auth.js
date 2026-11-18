@@ -301,9 +301,8 @@ async function main() {
           '(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
         models: {
-          'claude-sonnet': 'claude-sonnet-4-6',
-          'claude-opus': 'claude-opus-4-6',
-          'claude-haiku': 'claude-haiku-4-5-20251001',
+          'claude-sonnet': 'claude-sonnet-5-5',
+          'claude-haiku': 'claude-haiku-5-5',
         },
         defaultModel: 'claude-sonnet',
         createdAt: new Date().toISOString(),

@@ -1,10 +1,16 @@
 @echo off
-REM ============================================================
-REM  ClaudeWebProxy — ЗАПУСК ОДНИМ ФАЙЛОМ
-REM  Двойной клик по этому файлу или: start.cmd
-REM ============================================================
+chcp 866 >nul 2>&1
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
+
+REM ============================================================
+REM  ClaudeWebProxy - запуск одним файлом
+REM  Двойной клик по этому файлу или: start.cmd
+REM
+REM  Файл в кодировке CP866: так cmd на любой Windows показывает
+REM  русский текст правильно. Не пересохраняйте start.cmd в UTF-8
+REM  без обратного преобразования - буквы превратятся в кракозябры.
+REM ============================================================
 
 set "PORT=9656"
 set "CDP=9222"
@@ -54,7 +60,7 @@ echo [3/6] VPN-прокси на порту %VPN_PORT%...
 powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort %VPN_PORT% -State Listen -ErrorAction SilentlyContinue) { exit 0 } else { exit 1 }" >nul 2>&1
 if errorlevel 1 (
   echo       [ВНИМАНИЕ] порт %VPN_PORT% не слушает.
-  echo       Включите System Proxy в Hiddify, иначе Claude ответит "region_unavailable".
+  echo       Включите System Proxy в Hiddify, иначе Claude ответит region_unavailable.
   echo       Продолжаю запуск - ошибка будет видна в интерфейсе.
 ) else (
   for /f "delims=" %%c in ('curl.exe -s --max-time 10 -x http://127.0.0.1:%VPN_PORT% "http://ip-api.com/json/?fields=country" 2^>nul') do set "CTRY=%%c"
@@ -87,7 +93,7 @@ node server.js
 set "RC=%ERRORLEVEL%"
 echo.
 echo Сервер остановлен (код %RC%).
-echo Профиль браузера сохранён в browser-profile\ - вход в Claude сохранится.
+echo Профиль браузера сохранён в папке browser-profile - вход в Claude сохранится.
 echo.
 pause
 endlocal

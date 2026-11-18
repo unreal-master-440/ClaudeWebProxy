@@ -10,10 +10,9 @@
   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
   "timezone": "Europe/Minsk",
   "models": {
-    "claude-sonnet": "claude-sonnet-4-6",
-    "claude-haiku": "claude-haiku-4-5-20251001"
+    "claude-sonnet": "claude-sonnet-5-5",
+    "claude-haiku": "claude-haiku-5-5"
   },
-  "_models_comment": "Opus не включён: он возвращает 403, если не входит в план. Добавьте вручную, если доступен.",
   "defaultModel": "claude-sonnet",
   "createdAt": "2026-01-01T00:00:00.000Z"
 }

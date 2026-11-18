@@ -9,6 +9,7 @@ auth.json
 browser-profile/
 captures/
 
+# скриншоты для README (docs/ui.png коммитится)
 # логи и временное
 *.log
 npm-debug.log*

@@ -1,7 +1,7 @@
-* text=auto eol=lf
-
 # Windows-скрипты должны оставаться CRLF, иначе cmd ломается
 *.cmd text eol=crlf
+# start.cmd хранится в CP866: git НЕ должен менять его байты
+start.cmd -text
 *.bat text eol=crlf
 *.ps1 text eol=crlf
 
