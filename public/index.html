@@ -820,6 +820,15 @@ claude -p "Скажи одно слово: работает"</div>
         </div>
       </div>
 
+      <div class="note">
+        <span class="sign">ⓘ</span>
+        <span><b>VPN в новом терминале не нужен.</b> Все запросы идут на <code>127.0.0.1:9656</code> — это ваш компьютер, а не claude.ai. Дальше прокси сам достаёт ответ через браузер, где VPN и вход в Claude уже есть. Поэтому ошибка локации в новом окне терминала появиться не может: наружу из терминала не уходит ни один запрос.</span>
+      </div>
+
+      <p>Если ошибка всё-таки есть — почти всегда одно из двух: прокси не запущен (окно <code>start.cmd</code> закрыто) или в настройках остался чужой <code>ANTHROPIC_BASE_URL</code>. Проверка в том же терминале:</p>
+      <div class="code"><button class="copy" type="button">Копировать</button>curl.exe http://127.0.0.1:9656/health</div>
+      <p>Ответ <code>"status":"ok"</code> значит, что дело не в сети, а в настройках Claude Code.</p>
+
       <div class="note" style="background:rgba(242,104,92,.08);border-color:rgba(242,104,92,.3);color:#ffc0ba">
         <span class="sign">!</span>
         <span><b>Что не заработает.</b> Веб-эндпоинт Claude не принимает вызовы инструментов, поэтому правка файлов, запуск команд и поиск по коду из Claude Code работать не будут — придёт обычный текст. <code>max_tokens</code>, <code>temperature</code> и <code>stop</code> игнорируются. Это способ задавать вопросы Claude из терминала, а не полноценная замена API.</span>
