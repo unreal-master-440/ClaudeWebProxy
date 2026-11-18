@@ -10,6 +10,7 @@ const { ProxyError, toOpenAI, toAnthropic, logError, retryAfterSeconds } = requi
 const { createModelMapper } = require('./lib/models');
 const { SessionStore } = require('./lib/sessions');
 const { ClaudeWebClient, loadAuth } = require('./lib/claude');
+const agent = require('./lib/agent');
 const P = require('./lib/protocols');
 
 const ROOT = __dirname;
@@ -28,6 +29,10 @@ const config = {
   profileDir: path.join(ROOT, 'browser-profile'),
   browserPath: findBrowserPath(),
   sessionTtlMs: num(env.SESSION_TTL_MS, 30 * 60 * 1000),
+  agentMode: bool(env.AGENT_MODE, false),
+  agentCwd: env.AGENT_CWD ? path.resolve(ROOT, env.AGENT_CWD) : process.cwd(),
+  agentMaxSteps: num(env.AGENT_MAX_STEPS, agent.DEFAULT_MAX_STEPS),
+  agentCmdTimeoutMs: num(env.AGENT_CMD_TIMEOUT_MS, agent.DEFAULT_CMD_TIMEOUT),
 };
 
 if (config.host !== '127.0.0.1' && config.host !== 'localhost') {
@@ -121,21 +126,59 @@ async function runTurn({ prompt, clientModel, clientSessionId, thinkingLevel, wi
   }
   sessions.touch(clientSessionId, { conversationId, model: internalModel });
 
-  const result = await claude.send({
-    prompt,
-    model: internalModel,
-    conversationId,
-    parentMessageUuid: parent,
-    isNewConversation: isNew,
-    thinkingMode,
-    onEvent: (evt) => {
-      if (!wire.stream) return;
-      if (evt.kind === 'text') wire.onText(evt.text);
-      else if (evt.kind === 'thinking') wire.onThinking(evt.text);
-    },
-  });
+  // Один запрос к Claude. В режиме агента вызывается несколько раз подряд:
+  // модель просит CALL:, прокси выполняет команду и отправляет вывод обратно.
+  const sendTurn = async (turnPrompt) => {
+    const turnSession = sessions.get(clientSessionId);
+    const turnConversationId = turnSession && turnSession.conversationId
+      ? turnSession.conversationId
+      : conversationId;
+    const turnIsNew = !(turnSession && turnSession.conversationId) ? isNew : false;
+    const turnParent = turnSession ? turnSession.lastMessageId : null;
 
-  sessions.touch(clientSessionId, { lastMessageId: result.messageId });
+    if (turnIsNew) await claude.createConversation(turnConversationId, internalModel);
+    sessions.touch(clientSessionId, { conversationId: turnConversationId, model: internalModel });
+
+    const r = await claude.send({
+      prompt: turnPrompt,
+      model: internalModel,
+      conversationId: turnConversationId,
+      parentMessageUuid: turnParent,
+      isNewConversation: turnIsNew,
+      thinkingMode,
+      onEvent: (evt) => {
+        if (!wire.stream) return;
+        if (evt.kind === 'text') wire.onText(evt.text);
+        else if (evt.kind === 'thinking') wire.onThinking(evt.text);
+      },
+    });
+    sessions.touch(clientSessionId, { lastMessageId: r.messageId });
+    return r;
+  };
+
+  let result;
+  if (config.agentMode) {
+    result = await agent.run({
+      prompt,
+      sessionId: clientSessionId,
+      sendTurn,
+      cwd: config.agentCwd,
+      maxSteps: config.agentMaxSteps,
+      onEvent: (evt) => {
+        if (evt.kind === 'agent_call') {
+          logger.info(`[agent] шаг ${evt.step}: CALL: ${evt.command}`);
+          if (wire.stream) wire.onText(`\n\n> **CALL:** \`${evt.command}\`\n\n`);
+        } else if (evt.kind === 'agent_result') {
+          logger.info(`[agent] шаг ${evt.step}: код ${evt.exitCode}`);
+        } else if (evt.kind === 'agent_limit') {
+          logger.warn(`[agent] достигнут лимит ${evt.step} раундов`);
+        }
+      },
+    });
+  } else {
+    result = await sendTurn(prompt);
+  }
+
   return { ...result, internalModel, prompt };
 }
 
@@ -167,6 +210,13 @@ async function handleUiStatus(req, res) {
     thinkingLevels: models.thinkingLevels,
     defaultModel: models.defaultModel,
     defaultThinking: 'standard',
+    // Режим агента: клиенту полезно знать, что прокси будет исполнять команды.
+    agent: {
+      enabled: config.agentMode,
+      cwd: config.agentMode ? config.agentCwd : null,
+      maxSteps: config.agentMaxSteps,
+      commandTimeoutMs: config.agentCmdTimeoutMs,
+    },
   });
 }
 
@@ -241,6 +291,11 @@ async function handleHealth(req, res) {
     models: models.list(),
     transport: config.useBrowserTransport ? 'cdp-browser' : 'node-https',
     proxy: process.env.HTTPS_PROXY || process.env.HTTP_PROXY || null,
+    agent: {
+      enabled: config.agentMode,
+      cwd: config.agentMode ? config.agentCwd : null,
+      maxSteps: config.agentMaxSteps,
+    },
   });
 }
 
