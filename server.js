@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const { loadEnv, bool, num } = require('./lib/env');
 const logger = require('./lib/logger');
-const { ProxyError, toOpenAI, toAnthropic, logError } = require('./lib/errors');
+const { ProxyError, toOpenAI, toAnthropic, logError, retryAfterSeconds } = require('./lib/errors');
 const { createModelMapper } = require('./lib/models');
 const { SessionStore } = require('./lib/sessions');
 const { ClaudeWebClient, loadAuth } = require('./lib/claude');
@@ -46,12 +46,13 @@ try {
 
 /** ---------------- HTTP helpers ---------------- */
 
-function sendJson(res, status, obj) {
+function sendJson(res, status, obj, extraHeaders) {
   const body = JSON.stringify(obj);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
     'Cache-Control': 'no-store',
+    ...(extraHeaders || {}),
   });
   res.end(body);
 }
@@ -449,7 +450,9 @@ function createServer() {
         sseWrite(res, isAnthropic ? 'error' : null, payload);
         res.end();
       } else {
-        sendJson(res, e instanceof ProxyError ? e.httpStatus : 500, payload);
+        const status = e instanceof ProxyError ? e.httpStatus : 500;
+        const wait = status === 429 ? retryAfterSeconds(e) : null;
+        sendJson(res, status, payload, wait ? { 'Retry-After': String(wait) } : null);
       }
     }
   });
